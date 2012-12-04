@@ -1,0 +1,71 @@
+import pygame
+import util
+from puntos import Puntos
+#from bomba import Bomba
+#from cazador import Cazador
+
+class Escenario:
+    def __init__(self, nivel=1):
+        self.pared = util.cargar_imagen('bloque.png')
+	self.cesped=util.cargar_imagen('cesped.png')
+        self.mapa = self.cargar_nivel(nivel)
+
+    def imprimir(self, fondo):
+        imagenes = {
+	    '.': self.cesped,
+            '#': self.pared,
+            }
+
+        y = 0
+
+        for fila in self.mapa:
+            x = 0
+
+            for celda in fila:
+                if celda in imagenes:
+                    #pos = (60 + x * 48- 55, 80 + y * 43 - 43)
+                    pos = (60 + x * 48 - 30, 80 + y * 43 - 30)
+                    fondo.blit(imagenes[celda], pos)
+
+                x += 1
+
+            y += 1
+
+    def cargar_nivel(self, nivel):
+        nombre_del_archivo = 'nivel_%d.txt' %nivel
+        archivo = open(nombre_del_archivo, 'rt')
+        mapa = archivo.readlines()
+        archivo.close()
+        return mapa
+
+    def crear_objetos(self, puntos):
+        y = 0
+        for fila in self.mapa:
+            x = 0
+            for celda in fila:
+                pos_x, pos_y = util.a_coordenadas(y, x)
+		
+                if celda == '+':
+	             puntos.add(Puntos(pos_x, pos_y))
+                #elif celda == 'x':
+                 #   bombas.add(Bomba(pos_x, pos_y))
+                #elif celda == '@':
+                 #   cazadores.add(Cazador(pos_x, pos_y, self))
+
+                x += 1
+
+            y += 1
+
+    def puede_avanzar(self, (fila, columna), (df, dc)):
+
+
+        # limites de la pantalla
+        if fila + df < 0 or fila + df > 11:
+            return False
+        elif columna + dc < 0 or columna + dc > 11:
+            return False
+
+        if self.mapa[fila + df][columna + dc] in '# ':
+            return False
+
+        return True

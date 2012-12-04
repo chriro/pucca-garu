@@ -1,0 +1,437 @@
+import pygame
+import os
+from random import randint
+from pygame.locals import *
+from pygame.sprite import Sprite
+
+def cargar_imagen(nombre,optimizar = False):
+   ruta=os.path.join('images',nombre)
+   imagen=pygame.image.load(ruta)
+   if optimizar:
+	return imagen.convert()
+   else:
+	return imagen.convert_alpha()
+
+def spritecollideany(sprite,grupo):
+   funcion_colision=sprite.rect_colision.colliderect
+
+   for s in grupo:
+	if funcion_colision(s.rect_colision):
+	   return s
+   return None
+
+def a_coordenadas(fila,columna):
+   return (60+columna * 48 , 80+fila*43)
+
+def a_celdas(pos_x,pos_y):
+   return ((pos_y-80)/43 , (pos_x-60)/48)
+
+#clase final
+class Final(Sprite):
+   def __init__(self,x,y):
+	Sprite.__init__(self)
+	self.image=cargar_imagen('garu.png')
+	self.rect= self.image.get_rect()
+	self.rect.center = (x, y)
+	self.rect_colision = self.rect.inflate(-30,-10)
+	self.delay = 0
+	self.terminar = True
+   def update(self):
+	pass
+
+   def update_final(self):
+	self.delay -=1
+	if self.delay<1:
+	   self.kill()
+
+   def llegar(self):
+	self.image=cargar_imagen('fin.png')
+	self.delay =30
+	self.update = self.update_final
+	
+	self.termina=False
+
+
+# clase puntos
+class Puntos(Sprite):
+
+   def __init__(self, x, y):
+	Sprite.__init__(self)
+	self.image=cargar_imagen('punto.png')
+	self.rect= self.image.get_rect()
+	self.rect.center = (x, y)
+	self.rect_colision = self.rect.inflate(-30,-10)
+	self.delay = 0
+	self.se_puede_comer= True
+	
+   def update(self):
+	pass
+
+   def update_desaparecer(self):
+	self.delay -=1
+	if self.delay<1:
+	   self.kill()
+
+   def comer(self):
+	self.image=cargar_imagen('puntos.png')
+	self.delay =30
+	self.update = self.update_desaparecer
+	self.se_puede_comer=False
+
+#clase escenario
+class Escenario:
+    def __init__(self, nivel=1):
+        self.pared = cargar_imagen('bloque.png')
+	self.cesped=cargar_imagen('cesped.png')
+        self.mapa = self.cargar_nivel(nivel)
+	self.delay = None
+    def imprimir(self, fondo):
+        imagenes = {
+	    '.': self.cesped,
+            '#': self.pared,
+            }
+
+        y = 0
+
+        for fila in self.mapa:
+            x = 0
+
+            for celda in fila:
+                if celda in imagenes:
+                    #pos = (60 + x * 48- 55, 80 + y * 43 - 43)
+                    pos = (60 + x * 48 - 20, 80 + y * 43 - 20)
+                    fondo.blit(imagenes[celda], pos)
+
+                x += 1
+
+            y += 1
+
+    def cargar_nivel(self, nivel):
+        nombre_del_archivo = 'nivel_%d.txt' %nivel
+        archivo = open(nombre_del_archivo, 'rt')
+        mapa = archivo.readlines()
+        archivo.close()
+        return mapa
+
+    def crear_objetos(self, puntos,final):
+        y = 0
+        for fila in self.mapa:
+            x = 0
+            for celda in fila:
+                pos_x, pos_y = a_coordenadas(y, x)
+		if celda == '+':
+	             puntos.add(Puntos(pos_x, pos_y))
+                elif celda == 'x':
+                     final.add(Final(pos_x, pos_y))
+                elif celda == 'e':
+                    enemigo.add(Enemigo(pos_x, pos_y, self))
+
+                x += 1
+
+            y += 1
+
+    def update(self):
+	pass
+
+    def update_desaparecer(self):
+	self.delay -=1
+	if self.delay<1:
+	   self.kill()
+
+    def eliminar_objetos(self, puntos,final):
+        y = 0
+        for fila in self.mapa:
+            x = 0
+            for celda in fila:
+                pos_x, pos_y = a_coordenadas(y, x)
+		
+                if celda == '+':
+	             self.delay = 10
+		     self.update = self.update_desaparecer
+                elif celda == 'x':
+                     self.update = self.update_desaparecer
+                #elif celda == '@':
+                 #   cazadores.add(Cazador(pos_x, pos_y, self))
+
+                x += 1
+
+            y += 1
+
+    def puede_avanzar(self, (fila, columna), (df, dc)):
+
+
+        # limites de la pantalla
+        if fila + df < 0 or fila + df > 11:
+            return False
+        elif columna + dc < 0 or columna + dc > 11:
+            return False
+
+        if self.mapa[fila + df][columna + dc] in '# ':
+            return False
+
+        return True
+
+#clase jugador
+class Jugador(Sprite):
+
+   def __init__(self,escenario):
+	Sprite.__init__(self)
+	self.cargar_imagenes()
+	
+	self.escenario=escenario
+	self.en_movimiento=True
+	self.columna_destino=1
+	self.fila_destino=1
+	self.delay = None
+	self.x=-50
+	self.y=200
+	self.rect=self.image.get_rect()
+	self.rect_colision=self.rect.inflate(-20,-20)
+
+   def cargar_imagenes(self):
+	self.image = cargar_imagen('pucca.gif')
+
+   def update(self):
+	if not self.en_movimiento:
+	   teclas=pygame.key.get_pressed()
+	   if teclas[K_LEFT]:
+		self.mover(-1, 0)		
+	   elif teclas[K_RIGHT]:
+		self.mover(+1, 0)
+	   elif teclas[K_UP]:
+		self.mover(0, -1)
+	   elif teclas[K_DOWN]:
+		self.mover(0, +1)
+	else:
+	   self.actualizar_posicion()
+	
+	self.actualizar_animacion()
+	self.actualizar_rect_colision()
+
+   def actualizar_posicion(self):
+	pos= a_coordenadas(self.fila_destino,self.columna_destino)
+	destino_x,destino_y= pos
+
+	delta_x=(destino_x - self.x) / 10
+	delta_y=(destino_y - self.y) / 10
+
+	if abs(delta_x) <0.1 and abs(delta_y) < 0.1:
+	   self.x = destino_x
+	   self.y = destino_y
+	   self.en_movimiento = False
+	else:
+	   self.x +=delta_x
+	   self.y +=delta_y
+	self.rect.centerx=int(self.x)
+	self.rect.centery=int(self.y)
+	   
+
+   def mover(self,desplazamiento_columna, desplazamiento_fila):
+	self.en_movimiento = True
+
+	pos_actual = (self.fila_destino, self.columna_destino)
+	desplazamiento= (desplazamiento_fila, desplazamiento_columna)
+
+	if self.escenario.puede_avanzar(pos_actual,desplazamiento):
+	   self.fila_destino +=desplazamiento_fila
+	   self.columna_destino += desplazamiento_columna
+
+   def actualizar_rect_colision(self):
+	self.rect_colision.midbottom = self.rect.midbottom
+   
+   def actualizar_animacion(self):
+        if self.delay > 0:
+            self.delay -= 1
+
+   def pierde_una_vida(self):
+        self.delay = 20   
+
+#####------clase enemigo
+
+IZQUIERDA, DERECHA, ARRIBA, ABAJO = range(4)
+
+class Enemigo(Sprite):
+
+    def __init__(self, pos_x, pos_y, escenario):
+        Sprite.__init__(self)
+        self.cargar_imagenes()
+        self.image = self.normal
+        self.escenario = escenario
+        self.contador = 0
+        self.x = pos_x
+        self.y = pos_y
+        self.fila_destino, self.columna_destino = a_celdas(pos_x, pos_y)
+        self.demora_antes_de_mover = -1
+        self.rect = self.image.get_rect()
+        self.rect.center = (pos_x, pos_y)
+        self.rect_colision = self.rect.inflate(-30, -30)
+        self.direccion = IZQUIERDA
+
+    def cargar_imagenes(self):
+        self.normal = cargar_imagen('enemigo.png')
+        
+
+    def update(self):
+        direcciones = {
+                IZQUIERDA: (-1, 0),
+                DERECHA: (1, 0),
+                ARRIBA: (0, -1),
+                ABAJO: (0, 1)
+                }
+
+        # solo permite controlar al persona si no está en movimiento
+        if self.demora_antes_de_mover < 1:
+            x, y = direcciones[self.direccion]
+            self.mover(x, y)
+            self.demora_antes_de_mover = 30
+        else:
+            self.actualizar_posicion()
+
+        self.actualizar_rect_colision()
+        self.demora_antes_de_mover -= 1
+
+
+    def actualizar_posicion(self):
+        """Realiza un desplazamiento suave de un sitio a otro.
+
+        Mientras la variable self.en_movimiento vale True, el personaje
+        del juego se debe desplazar de forma progresiva desde la posición
+        (self.x, self.y) hasta las posición (destino_x, destino_y)."""
+
+        #destino_x = self.columna_destino * 48 + 60
+        #destino_y = self.fila_destino * 43 + 80
+        pos = a_coordenadas(self.fila_destino, self.columna_destino)
+        destino_x, destino_y = pos
+
+        delta_x = (destino_x - self.x) / 12.0
+        delta_y = (destino_y - self.y) / 12.0
+
+        # consulta si el desplazamiento es tan pequeño que se debe dar
+        # por concluido el desplazamiento
+        if abs(delta_x) < 0.1 and abs(delta_y) < 0.1:
+            self.x = destino_x
+            self.y = destino_y
+        else:
+            self.x += delta_x
+            self.y += delta_y
+
+        self.rect.centerx = int(self.x)
+        self.rect.centery = int(self.y)
+
+
+    def mover(self, desplazamiento_columna, desplazamiento_fila):
+        pos_actual = (self.fila_destino, self.columna_destino)
+        desplazamiento = (desplazamiento_fila, desplazamiento_columna)
+
+        if self.escenario.puede_avanzar(pos_actual, desplazamiento):
+            self.fila_destino += desplazamiento_fila
+            self.columna_destino += desplazamiento_columna
+        else:
+            if self.direccion == IZQUIERDA:
+                self.direccion = ARRIBA
+            elif self.direccion == ARRIBA:
+                self.direccion = DERECHA
+            elif self.direccion == DERECHA:
+                self.direccion = ABAJO
+            elif self.direccion == ABAJO:
+                self.direccion = IZQUIERDA
+
+    def actualizar_rect_colision(self):
+        self.rect_colision.midbottom = self.rect.midbottom
+
+#####----------#####
+def main():
+
+	pygame.init()
+
+	visor= pygame.display.set_mode((640,480))
+	fuente=pygame.font.Font(None,30)
+	pygame.display.set_caption("Pucca quiere a Garu")
+	temporizador=pygame.time.Clock()
+	color= (200,200,200)
+	fondo = cargar_imagen('fondo.jpg', optimizar= True)
+	logotipo=cargar_imagen('logo.gif')
+	
+	sprites = pygame.sprite.OrderedUpdates()
+
+	puntos = pygame.sprite.Group()
+	final = pygame.sprite.Group()	
+	enemigo = pygam.sprite.Group()
+	escenario = Escenario()
+	escenario.imprimir(fondo)
+	escenario.crear_objetos(puntos,final)
+	jugador= Jugador(escenario)
+	sprites.add(puntos)
+	sprites.add(final)
+	sprites.add(jugador)
+	sprites.add(enemigo)
+	nivel = 1
+	punto = 0
+	salir=True
+	#reloj = pygame.time.Clock()
+
+
+
+	while salir:
+		#reloj.tick(60)
+		for evento in pygame.event.get():
+		   if evento.type == pygame.QUIT:
+			salir = False
+		   elif evento.type == pygame.KEYDOWN:
+			if evento.unicode == 'q':
+			   salir= False
+			elif evento.unicode == 'f':
+			   pygame.display.toggle_fullscreen()
+	
+		puntos_en_colision = spritecollideany(jugador, puntos)
+		final_en_colision = spritecollideany(jugador, final)
+	# colision con puntos
+		if puntos_en_colision and puntos_en_colision.se_puede_comer:
+		   puntos_en_colision.comer()
+		   punto = punto +10			
+		
+		if final_en_colision and final_en_colision.terminar:
+		   final_en_colision.llegar()
+		   
+		   nivel= nivel + 1
+		   
+		   fondo = cargar_imagen('escenario.jpg', optimizar= True)
+	   	   logotipo=cargar_imagen('logo.gif')
+		   escenario = Escenario(nivel)
+		   escenario.imprimir(fondo)
+		   escenario.crear_objetos(puntos,final)
+		   jugador= Jugador(escenario)
+		   
+		   sprites.add(puntos)
+		   sprites.add(final)
+		   sprites.add(jugador)
+
+		enemigo_en_colision=spritecollideany(jugador,enemigo)
+		if enemigo_en_colision()
+		   enemigo_en_colision.kill()
+		   jugador.desaparece()
+		   
+
+		texto="puntos: " + str(punto) + "               nivel:" + str(nivel)
+		mensaje=fuente.render(texto,1,(255,255,255))
+		visor.fill((30,145,255))
+		visor.blit(fondo,(0,0))		
+		visor.blit(mensaje,(15,5))
+		pygame.draw.line(visor,(255,255,255),(0,25),(640,25) , 2)
+		sprites.update()
+		
+		sprites.draw(visor)
+		visor.blit(logotipo,(640-67,480-85))
+		pygame.display.flip()
+		temporizador.tick(60)
+
+
+if __name__ == '__main__':
+	main()
+
+
+
+
+
+
+

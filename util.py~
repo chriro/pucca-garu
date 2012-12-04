@@ -1,0 +1,41 @@
+import os
+import pygame
+from random import randint
+
+def cargar_imagen(nombre,optimizar = False):
+   ruta=os.path.join('images',nombre)
+   imagen=pygame.image.load(ruta)
+   if optimizar:
+	return imagen.convert()
+   else:
+	return imagen.convert_alpha()
+
+def spritecollideany(sprite,grupo):
+   funcion_colision=sprite.rect_colision.colliderect
+
+   for s in grupo:
+	if funcion_colision(s.rect_colision):
+	   return s
+   return None
+
+
+def a_coordenadas(fila,columna):
+   return (60+columna * 48 , 80+fila*43)
+
+def a_celdas(pos_x,pos_y):
+   return ((pos_y-80)/43 , (pos_x-60)/48)
+
+
+def cargar_texto( nombre, puntos):
+	white = (255,255,255)
+	gray = (100,100,100)
+	nombre_image = "Usuario: " +str(nombre)
+	puntos_image ="Puntos "+str(puntos)
+	screen.fill(gray,(0,0,110,90))
+	screen.blit(nombre_image,(5,5))	
+	screen.blit(puntos_image,(5,30))
+	screen.blit(nivel_image,(5,55))
+	screen.blit(niv_image,(5,80))
+
+
+   

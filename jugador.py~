@@ -1,0 +1,80 @@
+import pygame
+from pygame.sprite import Sprite
+from pygame import *
+import util
+
+class Jugador(Sprite):
+
+   def __init__(self,escenario):
+	Sprite.__init__(self)
+	self.cargar_imagenes()
+	self.image=self.normal
+	self.escenario=escenario
+	self.en_movimiento=True
+	self.columna_destino=1
+	self.fila_destino=1
+	self.delay = None
+	self.x=-50
+	self.y=200
+	self.rect=self.image.get_rect()
+	self.rect_colision=self.rect.inflate(-20,-20)
+
+   def cargar_imagenes(self):
+	self.normal = util.cargar_imagen('pucca.png')
+	self.contento = util.cargar_imagen('jugador1.jpg')
+
+   def update(self):
+	if not self.en_movimiento:
+	   teclas=pygame.key.get_pressed()
+	   if teclas[K_LEFT]:
+		self.mover(-1, 0)		
+	   elif teclas[K_RIGHT]:
+		self.mover(+1, 0)
+	   elif teclas[K_UP]:
+		self.mover(0, -1)
+	   elif teclas[K_DOWN]:
+		self.mover(0, +1)
+	else:
+	   self.actualizar_posicion()
+
+	self.actualizar_rect_colision()
+
+   def actualizar_posicion(self):
+	pos= util.a_coordenadas(self.fila_destino,self.columna_destino)
+	destino_x,destino_y= pos
+
+	delta_x=(destino_x - self.x) / 10
+	delta_y=(destino_y - self.y) / 10
+
+	if abs(delta_x) <0.1 and abs(delta_y) < 0.1:
+	   self.x = destino_x
+	   self.y = destino_y
+	   self.en_movimiento = False
+	else:
+	   self.x +=delta_x
+	   self.y +=delta_y
+	self.rect.centerx=int(self.x)
+	self.rect.centery=int(self.y)
+	   
+
+   def mover(self,desplazamiento_columna, desplazamiento_fila):
+	self.en_movimiento = True
+
+	pos_actual = (self.fila_destino, self.columna_destino)
+	desplazamiento= (desplazamiento_fila, desplazamiento_columna)
+
+	if self.escenario.puede_avanzar(pos_actual,desplazamiento):
+	   self.fila_destino +=desplazamiento_fila
+	   self.columna_destino += desplazamiento_columna
+
+   def actualizar_rect_colision(self):
+	self.rect_colision.midbottom = self.rect.midbottom
+   
+
+   def ponerse_contento(self):
+	self.image=self.contento
+	self.delay = 60
+	self.image=self.normal
+
+
+

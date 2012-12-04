@@ -1,0 +1,31 @@
+
+from pygame.sprite import Sprite
+import util
+
+
+class Puntos(Sprite):
+
+   def __init__(self, x, y):
+	Sprite.__init__(self)
+	self.image=util.cargar_imagen('puntos.png')
+	self.rect= self.image.get_rect()
+	self.rect.center = (x, y)
+	self.rect_colision = self.rect.inflate(-30,-10)
+	self.delay = 0
+	self.se_puede_comer= True
+
+   def update(self):
+	pass
+
+   def update_desaparecer(self):
+	self.delay -=1
+	if self.delay<1:
+	   self.kill()
+
+   def comer(self):
+	self.image=util.cargar_imagen('puntos.png')
+	self.delay =30
+	self.update = self.update_desaparecer
+	self.se_puede_comer=False
+
+
